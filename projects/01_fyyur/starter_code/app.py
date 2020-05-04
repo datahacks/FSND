@@ -119,6 +119,13 @@ def past_shows(shows):
   if shows:
     result = [show_dict(s) for s in shows if s.start_time < datetime.now()]
   return result
+
+def area_venue_dict(area, venues):
+  return {
+    "city": area[0],
+    "state": area[1],
+    "venues": [{"id": v.id, "name": v.name, "num_upcoming_shows": len(upcoming_shows(v.shows))} for v in venues]
+  }
   
 #----------------------------------------------------------------------------#
 # Controllers.
@@ -134,35 +141,10 @@ def index():
 
 @app.route('/venues')
 def venues():
-  # TODO: replace with real venues data.
-  #       num_shows should be aggregated based on number of upcoming shows per venue.
-  data=[{
-    "city": "San Francisco",
-    "state": "CA",
-    "venues": [{
-      "id": 1,
-      "name": "The Musical Hop",
-      "num_upcoming_shows": 0,
-    }, {
-      "id": 3,
-      "name": "Park Square Live Music & Coffee",
-      "num_upcoming_shows": 1,
-    }]
-  }, {
-    "city": "New York",
-    "state": "NY",
-    "venues": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }]
-
+  
   areas = [(v.city, v.state) for v in Venue.query.distinct(Venue.city, Venue.state)]
-  print(areas)
-
-  venues_areas = [Venue.query.filter_by(city=a[0]) for a in areas]
-  print(venues_areas)
+  venues_areas = {a: Venue.query.filter_by(city=a[0], state=a[1]).all() for a in areas}
+  data = [area_venue_dict((k,v),l) for (k,v),l in venues_areas.items()]
 
   return render_template('pages/venues.html', areas=data)
 
@@ -239,17 +221,9 @@ def delete_venue(venue_id):
 #  ----------------------------------------------------------------
 @app.route('/artists')
 def artists():
-  # TODO: replace with real data returned from querying the database
-  data=[{
-    "id": 4,
-    "name": "Guns N Petals",
-  }, {
-    "id": 5,
-    "name": "Matt Quevedo",
-  }, {
-    "id": 6,
-    "name": "The Wild Sax Band",
-  }]
+  artists = Artist.query.all()
+  data = [{"id": a.id, "name": a.name} for a in artists]
+
   return render_template('pages/artists.html', artists=data)
 
 @app.route('/artists/search', methods=['POST'])
