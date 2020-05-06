@@ -117,6 +117,24 @@
   <script>window.jQuery || document.write('<script type="text/javascript" src="/static/js/libs/jquery-1.11.1.min.js"><\/script>')</script>
   <script type="text/javascript" src="/static/js/libs/bootstrap-3.1.1.min.js" defer></script>
   <script type="text/javascript" src="/static/js/plugins.js" defer></script>
+  <script>
+    const deleteBtns = document.querySelectorAll('.btn.btn-light.far.fa-trash-alt');
+    for (let i = 0; i < deleteBtns.length; i++) {
+      const btn = deleteBtns[i];
+      btn.onclick = function(e) {
+        const venueId = e.target.dataset['id'];
+        fetch('/venues/' + venueId, {
+          method: 'DELETE'
+          })
+          .then(function(response){
+            //window.location.href = "{{ url_for('index') }}";
+            window.location.href = response['url'];
+            console.log(response['url']);
+          }
+          );
+          }
+          }
+  </script>
 
 </body>
 </html>
