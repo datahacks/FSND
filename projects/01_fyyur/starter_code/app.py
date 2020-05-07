@@ -16,6 +16,8 @@ from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
 
+from models import db, Venue, Artist, Show
+
 # ----------------------------------------------------------------------------#
 # App Config.
 # ----------------------------------------------------------------------------#
@@ -23,63 +25,9 @@ from flask_migrate import Migrate
 app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
-db = SQLAlchemy(app)
+db.init_app(app)
 
 migrate = Migrate(app, db)
-
-#----------------------------------------------------------------------------#
-# Models.
-#----------------------------------------------------------------------------#
-
-class Venue(db.Model):
-    __tablename__ = 'Venue'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    genres = db.Column(db.String(500))
-    website = db.Column(db.String(120))
-    seeking_talent = db.Column(db.Boolean)
-    seeking_description = db.Column(db.String(500))
-    shows = db.relationship('Show', backref = 'venue', lazy=True)
-
-    def __repr__(self):
-      return f'<Venue {self.id} {self.name}>'
-
-class Artist(db.Model):
-    __tablename__ = 'Artist'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    website = db.Column(db.String(120))
-    seeking_venue = db.Column(db.Boolean)
-    seeking_description = db.Column(db.String(500))   
-    shows = db.relationship('Show', backref='artist', lazy=True)
-
-    def __repr__(self):
-      return f'<Artist {self.id} {self.name}>'
-
-class Show(db.Model):
-  __tablename__ = 'Show'
-
-  id = db.Column(db.Integer, primary_key=True)
-  start_time = db.Column(db.DateTime)
-  venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), nullable=False)
-  artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), nullable=False)
-
-  def __repr__(self):
-    return f'<Show {self.id} {self.start_time} Artist: {self.artist_id} Venue: {self.venue_id}>'
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -119,6 +67,7 @@ def past_shows(shows):
   result = []
   if shows:
     result = [show_dict(s) for s in shows if s.start_time < datetime.now()]
+    print(shows)
   return result
 
 def area_venue_dict(area, venues):
@@ -169,6 +118,12 @@ def show_venue(venue_id):
   # shows the venue page with the given venue_id
 
   venue = Venue.query.get(venue_id)
+  past_shows = db.session.query(Show).join(Venue).filter(Show.venue_id == venue_id) \
+                .filter(Show.start_time < datetime.now()).all()
+
+  upcoming_shows = db.session.query(Show).join(Venue).filter(Show.venue_id == venue_id) \
+                .filter(Show.start_time > datetime.now()).all()
+ 
   data = {
     "id": venue.id,
     "name": venue.name,
@@ -182,10 +137,10 @@ def show_venue(venue_id):
     "seeking_talent": venue.seeking_talent,
     "seeking_description": venue.seeking_description,
     "image_link": venue.image_link,
-    "past_shows": past_shows(venue.shows),
-    "upcoming_shows": upcoming_shows(venue.shows),
-    "past_shows_count": len(past_shows(venue.shows)),
-    "upcoming_shows_count": len(upcoming_shows(venue.shows)),   
+    "past_shows": [show_dict(s) for s in past_shows],
+    "upcoming_shows": [show_dict(s) for s in upcoming_shows],
+    "past_shows_count": len(past_shows),
+    "upcoming_shows_count": len(upcoming_shows),   
   }
   return render_template('pages/show_venue.html', venue=data)
 
@@ -283,6 +238,11 @@ def show_artist(artist_id):
   # shows the artist page with the given artist_id
 
   artist = Artist.query.get(artist_id)
+  past_shows = db.session.query(Show).join(Artist).filter(Show.artist_id == artist_id) \
+                .filter(Show.start_time < datetime.now()).all()
+
+  upcoming_shows = db.session.query(Show).join(Artist).filter(Show.artist_id == artist_id) \
+                .filter(Show.start_time > datetime.now()).all()
   data={
     "id": artist.id,
     "name": artist.name,
@@ -295,10 +255,10 @@ def show_artist(artist_id):
     "seeking_venue": artist.seeking_venue,
     "seeking_description": artist.seeking_description,
     "image_link": artist.image_link,
-    "past_shows": past_shows(artist.shows),
-    "upcoming_shows": upcoming_shows(artist.shows),
-    "past_shows_count": len(past_shows(artist.shows)),
-    "upcoming_shows_count": len(upcoming_shows(artist.shows)),
+    "past_shows": [show_dict(s) for s in past_shows],
+    "upcoming_shows": [show_dict(s) for s in upcoming_shows],
+    "past_shows_count": len(past_shows),
+    "upcoming_shows_count": len(upcoming_shows),
   }
 
   return render_template('pages/show_artist.html', artist=data)
