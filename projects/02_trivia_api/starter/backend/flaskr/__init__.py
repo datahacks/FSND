@@ -12,24 +12,40 @@ def create_app(test_config=None):
   # create and configure the app
   app = Flask(__name__)
   setup_db(app)
-  
-  '''
-  @TODO: Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
-  '''
+ 
+
+  @app.route('/')
+  def hello():
+    return jsonify({'message': 'Hello World'})
 
   '''
-  @TODO: Use the after_request decorator to set Access-Control-Allow
+  Set up CORS. Allow '*' for origins. Delete the sample route after completing the TODOs
   '''
+  cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
   '''
-  @TODO: 
+  Use the after_request decorator to set Access-Control-Allow
+  '''
+  @app.after_request
+  def after_request(response):
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS')
+    return response
+
+  ''' 
   Create an endpoint to handle GET requests 
   for all available categories.
   '''
+  @app.route('/categories')
+  def get_categories():
+    categories = Category.query.all()
+    formatted_categories = [c.format() for c in categories]
+    return jsonify({
+      'success': True,
+      'categories': formatted_categories
+    })
 
-
-  '''
-  @TODO: 
+  ''' 
   Create an endpoint to handle GET requests for questions, 
   including pagination (every 10 questions). 
   This endpoint should return a list of questions, 
@@ -40,6 +56,23 @@ def create_app(test_config=None):
   ten questions per page and pagination at the bottom of the screen for three pages.
   Clicking on the page numbers should update the questions. 
   '''
+  @app.route('/questions')
+  def get_questions():
+    page = request.args.get('page', 1, type=int)
+    start = (page - 1) * 10
+    end = start + 10
+    questions = Question.query.all()
+    formatted_questions = [q.format() for q in questions]
+
+    categories = Category.query.all()
+
+    return jsonify ({
+      'questions': formatted_questions[start:end],
+      'total_questions': len(formatted_questions),
+      'current_category': None,
+      'categories': {c.id:c.type for c in categories},
+      'success': True
+    })
 
   '''
   @TODO: 
