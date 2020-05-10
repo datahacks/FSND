@@ -8,6 +8,7 @@ from models import setup_db, db, Question, Category
 
 QUESTIONS_PER_PAGE = 10
 
+# Helper functions
 def paginate_questions(request, selection):
   page = request.args.get('page', 1, type=int)
   start = (page - 1) * QUESTIONS_PER_PAGE
@@ -16,6 +17,18 @@ def paginate_questions(request, selection):
   questions = [q.format() for q in selection]
   current_questions = questions[start:end]
   return current_questions
+
+def get_quiz_question(selection, previous_questions):
+  selection_ids = [s.id for s in selection]
+  diff = list(set(selection_ids) - set(previous_questions))
+  question = None
+  if diff and len(diff) > 1:
+    question = Question.query.get(random.choice(diff)).format()
+  elif len(diff) == 1:
+    question = Question.query.get(diff[0]).format()
+  else:
+    question = None
+  return question
 
 def create_app(test_config=None):
   # create and configure the app
@@ -205,34 +218,25 @@ def create_app(test_config=None):
   @app.route('/quizzes', methods = ['POST'])
   def quizzes():
     body = request.get_json()
-    print(body)
-    quiz_category = body.get('quiz_category', None)
-    previous_questions = body.get('previous_questions', None)
+    previous_questions = body.get('previous_questions', [])
+    quiz_category_id = int(body.get('quiz_category', {}).get('id', 0))
 
-    if (quiz_category is None):
-      abort(400)
-    print(quiz_category['id'])
-    print([c.id for c in Category.query.all()])
-    selection = None
-    flag = True
-    categories = [c.id for c in Category.query.all()]
-    category_id = int(quiz_category['id'])
-    while flag:
-      if (category_id in categories ):
-        print('inside if')
-        selection = random.choice(Question.query.filter(Question.category == category_id).all())
-      else:
-        print('inside else')
-        selection = random.choice(Question.query.all())
-        print(selection)
-      
-      flag = True if selection.id not in previous_questions else False
-      print(selection)
+    all_category_ids = [c.id for c in Category.query.all()]
+
+    if (quiz_category_id in all_category_ids):
+      selection = Question.query.filter(Question.category == quiz_category_id).all()
+    else:
+      selection = Question.query.all()
+
+    if selection is None:
+      abort(404)
+
+    question = get_quiz_question(selection, previous_questions)
 
     return jsonify({
       'success': True,
-      'question': selection.format()
-    })
+      'question': question
+      })
 
   ''' 
   Create error handlers for all expected errors 
