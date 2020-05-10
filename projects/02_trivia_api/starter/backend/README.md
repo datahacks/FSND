@@ -66,28 +66,87 @@ One note before you delve into your tasks: for each endpoint you are expected to
 8. Create a POST endpoint to get questions to play the quiz. This endpoint should take category and previous question parameters and return a random questions within the given category, if provided, and that is not one of the previous questions. 
 9. Create error handlers for all expected errors including 400, 404, 422 and 500. 
 
-REVIEW_COMMENT
+## API Reference
+Base URL: At present this app can only run locally. API endpoints can referenced at default, http://127.0.0.1:5000/
+
+### Error Handling
+Errors are returned as JSON in the following format:
+```Javascript
+{
+    "success": False,
+    "error": 400,
+    "message": "bad request"
+}
 ```
-This README is missing documentation of your endpoints. Below is an example for your endpoint to get all categories. Please use it as a reference for creating your documentation and resubmit your code. 
+The API will return below error types when requests fail:
+* 400: Bad request
+* 404: Resource not found
+* 405: Method not allowed
+* 422: Not processable
 
-Endpoints
-GET '/categories'
-GET ...
-POST ...
-DELETE ...
-
-GET '/categories'
-- Fetches a dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
-- Request Arguments: None
-- Returns: An object with a single key, categories, that contains a object of id: category_string key:value pairs. 
-{'1' : "Science",
-'2' : "Art",
-'3' : "Geography",
-'4' : "History",
-'5' : "Entertainment",
-'6' : "Sports"}
-
+### Endpoints
+#### GET/categories
+* General:
+    - Fetches a dictionary of categories in which the keys are the ids and the value is the corresponding string of the category
+* Sample:
+```bash
+curl http://127.0.0.1:5000/categories
 ```
+
+```Javascript
+{
+  "categories": {
+    "1": "Science", 
+    "2": "Art", 
+    "3": "Geography", 
+    "4": "History", 
+    "5": "Entertainment", 
+    "6": "Sports"
+  }, 
+  "success": true
+}
+```
+
+#### GET/questions
+
+```bash
+curl http://127.0.0.1:5000/questions
+```
+or
+```bash
+curl http://127.0.0.1:5000/questions?page=2
+```
+
+#### DELETE/questions/{question_id}
+
+```bash
+curl http://127.0.0.1:5000/questions/1 -X DELETE
+```
+
+#### POST/questions
+
+```bash
+curl http://localhost:5000/questions -X POST -H "Content-Type: application/json" -d '{"question":"capital of USA", "answer":"Washington DC", "difficulty":1, "categories":3}'
+```
+
+#### POST/questions/search
+
+```bash
+curl http://localhost:5000/questions/search -X POST -H "Content-Type: application/json" -d '{"searchTerm":"title"}'
+```
+
+#### GET/categories/{category_id}/questions
+
+```bash
+curl http://127.0.0.1:5000/categories/1/questions
+```
+
+#### POST/quizzes
+
+```bash
+curl http://127.0.0.1:5000/categories
+```
+
 
 
 ## Testing
